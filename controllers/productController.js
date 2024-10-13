@@ -121,10 +121,42 @@ const deleteAllProducts = async (req, res) => {
   }
 };
 
+const updateProduct = async (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+
+  if (!productId) {
+    return res.status(400).json({ message: "Invalid product Id" });
+  }
+
+  try {
+    const { newTitle, newPrice, newDescription, newImageUrl } = req.body;
+
+    const updatedProduct = await prisma.product.update({
+      where: {
+        id: productId,
+      },
+      data: {
+        title: newTitle,
+        price: newPrice,
+        description: newDescription,
+        imageUrl: newImageUrl,
+      },
+    });
+    res.status(200).json({
+      message: `Product ${productId} updated sucessfully`,
+      product: updatedProduct,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: `Error deleting product ${productId}` });
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
   postProduct,
   deleteProductById,
   deleteAllProducts,
+  updateProduct,
 };
