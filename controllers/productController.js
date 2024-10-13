@@ -8,6 +8,7 @@ const getProductsByUser = async (req, res) => {
   if (!userId) {
     return res.status(400).json({ message: "User Id Invalid" });
   }
+
   try {
     const products = await prisma.product.findMany({
       where: {
@@ -34,7 +35,7 @@ const getProductById = async (req, res) => {
   }
   const productId = parseInt(req.params.id, 10);
 
-  if (isNaN(postId)) {
+  if (isNaN(productId)) {
     res.status(400).send("Invalid product id");
   }
 

@@ -25,4 +25,35 @@ const getTablesByUser = async (req, res) => {
   }
 };
 
-module.exports = { getTablesByUser };
+const getTableById = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
+
+  const tableId = parseInt(req.params.id, 10);
+
+  if (isNaN(tableId)) {
+    res.status(400).send("Invalid product id");
+  }
+
+  try {
+    const table = await prisma.table.findUnique({
+      where: {
+        id: tableId,
+        table: {
+          connect: { id: userId },
+        },
+      },
+    });
+    res
+      .status(200)
+      .json({ message: `Table ${tableId} gotten sucessfully`, table: table });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: `Error getting table ${tableId}` });
+  }
+};
+
+module.exports = { getTablesByUser, getTableById };
