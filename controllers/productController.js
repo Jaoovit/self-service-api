@@ -48,7 +48,7 @@ const postProduct = async (req, res) => {
       return res.status(400).json({ message: "All form fields are mandatory" });
     }
 
-    const userId = req.session.passport.user;
+    const userId = parseInt(req.session.passport.user, 10);
 
     if (!userId) {
       return res.status(400).json({ message: "Invalid user Id" });
@@ -74,4 +74,57 @@ const postProduct = async (req, res) => {
   }
 };
 
-module.exports = { getAllProducts, getProductById, postProduct };
+const deleteProductById = async (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+
+  if (!productId) {
+    return res.status(400).json({ message: "Invalid product Id" });
+  }
+
+  try {
+    await prisma.product.delete({
+      where: {
+        id: productId,
+      },
+    });
+
+    res
+      .status(200)
+      .json({ message: `Product ${productId} deleted sucessfully` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: `Error deleting product ${productId}` });
+  }
+};
+
+const deleteAllProducts = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "Invalid" });
+  }
+
+  try {
+    await prisma.product.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+    res
+      .status(200)
+      .json({ message: `All user ${userId} products was deleted` });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: `Error deleting products for user ${userId}` });
+  }
+};
+
+module.exports = {
+  getAllProducts,
+  getProductById,
+  postProduct,
+  deleteProductById,
+  deleteAllProducts,
+};
