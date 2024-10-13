@@ -1,11 +1,21 @@
 const { PrismaClient } = require("@prisma/client");
-const { connect } = require("../routes/productRoute");
 
 const prisma = new PrismaClient();
 
-const getAllProducts = async (req, res) => {
+const getProductsByUser = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
   try {
-    const products = await prisma.product.findMany();
+    const products = await prisma.product.findMany({
+      where: {
+        product: {
+          connect: { id: userId },
+        },
+      },
+    });
 
     res
       .status(200)
@@ -17,6 +27,11 @@ const getAllProducts = async (req, res) => {
 };
 
 const getProductById = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
   const productId = parseInt(req.params.id, 10);
 
   if (isNaN(postId)) {
@@ -27,6 +42,9 @@ const getProductById = async (req, res) => {
     const product = await prisma.product.findUnique({
       where: {
         id: productId,
+        product: {
+          connect: { id: userId },
+        },
       },
     });
 
@@ -75,6 +93,11 @@ const postProduct = async (req, res) => {
 };
 
 const deleteProductById = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
   const productId = parseInt(req.params.id, 10);
 
   if (!productId) {
@@ -85,6 +108,9 @@ const deleteProductById = async (req, res) => {
     await prisma.product.delete({
       where: {
         id: productId,
+        product: {
+          connect: { id: userId },
+        },
       },
     });
 
@@ -122,6 +148,11 @@ const deleteAllProducts = async (req, res) => {
 };
 
 const updateProduct = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
   const productId = parseInt(req.params.id, 10);
 
   if (!productId) {
@@ -134,6 +165,9 @@ const updateProduct = async (req, res) => {
     const updatedProduct = await prisma.product.update({
       where: {
         id: productId,
+        product: {
+          connect: { id: userId },
+        },
       },
       data: {
         title: newTitle,
@@ -153,6 +187,11 @@ const updateProduct = async (req, res) => {
 };
 
 const switchProductStatus = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
   const productId = parseInt(req.params.id, 10);
 
   if (!productId) {
@@ -177,6 +216,9 @@ const switchProductStatus = async (req, res) => {
     const updatedProduct = await prisma.product.update({
       where: {
         id: productId,
+        product: {
+          connect: { id: userId },
+        },
       },
       data: {
         available: newAvailability,
@@ -193,7 +235,7 @@ const switchProductStatus = async (req, res) => {
 };
 
 module.exports = {
-  getAllProducts,
+  getProductsByUser,
   getProductById,
   postProduct,
   deleteProductById,

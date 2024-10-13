@@ -23,6 +23,7 @@ model User {
   password        String
   restaurantName  String
   product         Product[]
+  table           Table[]
 }
 
 model Product {
@@ -51,6 +52,8 @@ model Order {
 model Table {
    id       Int     @id @default(autoincrement())
    number   Int
+   userId   Int
+   user     User     @relation(fields: [userId], references: [id])
    order    Order[]
 }
 
