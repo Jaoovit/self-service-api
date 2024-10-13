@@ -101,7 +101,7 @@ const deleteAllProducts = async (req, res) => {
   const userId = parseInt(req.session.passport.user, 10);
 
   if (!userId) {
-    return res.status(400).json({ message: "Invalid" });
+    return res.status(400).json({ message: "User Id Invalid" });
   }
 
   try {
@@ -152,6 +152,46 @@ const updateProduct = async (req, res) => {
   }
 };
 
+const switchProductStatus = async (req, res) => {
+  const productId = parseInt(req.params.id, 10);
+
+  if (!productId) {
+    return res.status(400).json({ message: "Invalid product Id" });
+  }
+
+  try {
+    const product = await prisma.product.findUnique({
+      where: {
+        id: productId,
+      },
+    });
+
+    if (!product) {
+      return res
+        .status(404)
+        .json({ message: `Product ${productId} not found` });
+    }
+
+    const newAvailability = !product.available;
+
+    const updatedProduct = await prisma.product.update({
+      where: {
+        id: productId,
+      },
+      data: {
+        available: newAvailability,
+      },
+    });
+    res.status(200).json({
+      message: `Product availability switched to ${newAvailability}`,
+      product: updatedProduct,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({});
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -159,4 +199,5 @@ module.exports = {
   deleteProductById,
   deleteAllProducts,
   updateProduct,
+  switchProductStatus,
 };
