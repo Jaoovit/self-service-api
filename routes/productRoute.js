@@ -4,7 +4,9 @@ const router = express.Router();
 const verifyToken = require("../config/token");
 
 // Get
-router.get("/products", productController.getProductsByUser);
+
+// getting products as a client => /products?restaurantId=:id
+router.get("/products", productController.getProductsByUser); // getting products as a restaurante
 router.get("/product/:id", productController.getProductById);
 
 // Post

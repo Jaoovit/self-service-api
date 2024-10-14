@@ -4,22 +4,39 @@ const { broadcastToClients } = require("../config/websocket");
 const prisma = new PrismaClient();
 
 const getProductsByUser = async (req, res) => {
-  const userId = parseInt(req.session.passport.user, 10);
+  const userId = req.session?.passport?.user
+    ? parseInt(req.session.passport.user, 10)
+    : null;
 
-  if (!userId) {
-    return res.status(400).json({ message: "User Id Invalid" });
-  }
+  const restaurantId = req.query.restaurantId
+    ? parseInt(req.query.restaurantId, 10)
+    : null;
 
   try {
-    const products = await prisma.product.findMany({
-      where: {
-        userId: userId,
-      },
-    });
+    let products;
 
-    res
-      .status(200)
-      .json({ message: "Products gotten sucessfully", products: products });
+    if (userId) {
+      products = await prisma.product.findMany({
+        where: {
+          userId: userId,
+        },
+      });
+    } else if (restaurantId) {
+      products = await prisma.product.findMany({
+        where: {
+          userId: restaurantId,
+        },
+      });
+    } else {
+      return res
+        .status(400)
+        .json({ message: "No valid user or restaurant information provided." });
+    }
+
+    res.status(200).json({
+      message: "Products fetched successfully",
+      products: products,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error getting products." });
@@ -27,11 +44,10 @@ const getProductsByUser = async (req, res) => {
 };
 
 const getProductById = async (req, res) => {
-  const userId = parseInt(req.session.passport.user, 10);
+  const userId = req.session?.passport?.user
+    ? parseInt(req.session.passport.user, 10)
+    : null;
 
-  if (!userId) {
-    return res.status(400).json({ message: "User Id Invalid" });
-  }
   const productId = parseInt(req.params.id, 10);
 
   if (isNaN(productId)) {
@@ -39,21 +55,37 @@ const getProductById = async (req, res) => {
   }
 
   try {
-    const product = await prisma.product.findUnique({
-      where: {
-        id: productId,
-        userId: userId,
-      },
-    });
+    let product;
 
-    if (!product) {
-      return res.status(404).json({
-        error: `Product with ID ${productId} not found`,
+    if (userId) {
+      product = await prisma.product.findUnique({
+        where: {
+          id: productId,
+          userId: userId,
+        },
       });
+
+      if (!product) {
+        return res.status(404).json({
+          error: `Product with ID ${productId} not found or does not belong to the user.`,
+        });
+      }
+    } else {
+      product = await prisma.product.findUnique({
+        where: {
+          id: productId,
+        },
+      });
+
+      if (!product) {
+        return res.status(404).json({
+          error: `Product with ID ${productId} not found.`,
+        });
+      }
     }
 
     res.status(200).json({
-      message: `Product ${productId} gotten sucessfully`,
+      message: `Product ${productId} retrieved successfully`,
       product: product,
     });
   } catch (error) {
