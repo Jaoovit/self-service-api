@@ -1,4 +1,5 @@
 const { PrismaClient } = require("@prisma/client");
+const { broadcastToClients } = require("../config/websocket");
 
 const prisma = new PrismaClient();
 
@@ -12,9 +13,7 @@ const getProductsByUser = async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       where: {
-        product: {
-          connect: { id: userId },
-        },
+        userId: userId,
       },
     });
 
@@ -43,11 +42,15 @@ const getProductById = async (req, res) => {
     const product = await prisma.product.findUnique({
       where: {
         id: productId,
-        product: {
-          connect: { id: userId },
-        },
+        userId: userId,
       },
     });
+
+    if (!product) {
+      return res.status(404).json({
+        error: `Product with ID ${productId} not found`,
+      });
+    }
 
     res.status(200).json({
       message: `Product ${productId} gotten sucessfully`,
@@ -109,9 +112,7 @@ const deleteProductById = async (req, res) => {
     await prisma.product.delete({
       where: {
         id: productId,
-        product: {
-          connect: { id: userId },
-        },
+        userId: userId,
       },
     });
 
@@ -124,7 +125,7 @@ const deleteProductById = async (req, res) => {
   }
 };
 
-const deleteAllProducts = async (req, res) => {
+const deleteAllUserProducts = async (req, res) => {
   const userId = parseInt(req.session.passport.user, 10);
 
   if (!userId) {
@@ -161,20 +162,22 @@ const updateProduct = async (req, res) => {
   }
 
   try {
-    const { newTitle, newPrice, newDescription, newImageUrl } = req.body;
+    const { title, price, description, imageUrl } = req.body;
+
+    if (!title || !price || !description || !imageUrl) {
+      return res.status(400).json({ message: "All form fields are mandatory" });
+    }
 
     const updatedProduct = await prisma.product.update({
       where: {
         id: productId,
-        product: {
-          connect: { id: userId },
-        },
+        userId: userId,
       },
       data: {
-        title: newTitle,
-        price: newPrice,
-        description: newDescription,
-        imageUrl: newImageUrl,
+        title: title,
+        price: price,
+        description: description,
+        imageUrl: imageUrl,
       },
     });
     res.status(200).json({
@@ -217,17 +220,26 @@ const switchProductStatus = async (req, res) => {
     const updatedProduct = await prisma.product.update({
       where: {
         id: productId,
-        product: {
-          connect: { id: userId },
-        },
+        userId: userId,
       },
       data: {
         available: newAvailability,
       },
     });
+
+    // Send HTTP response
     res.status(200).json({
       message: `Product availability switched to ${newAvailability}`,
       product: updatedProduct,
+    });
+
+    // Broadcast product update via WebSocket
+    broadcastToClients({
+      type: "PRODUCT_STATUS_UPDATE",
+      product: {
+        id: productId,
+        available: newAvailability,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -240,7 +252,7 @@ module.exports = {
   getProductById,
   postProduct,
   deleteProductById,
-  deleteAllProducts,
+  deleteAllUserProducts,
   updateProduct,
   switchProductStatus,
 };
