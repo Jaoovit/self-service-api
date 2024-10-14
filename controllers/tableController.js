@@ -12,9 +12,7 @@ const getTablesByUser = async (req, res) => {
   try {
     const tables = await prisma.table.findMany({
       where: {
-        table: {
-          connect: { id: userId },
-        },
+        userId: userId,
       },
     });
     res
@@ -42,9 +40,7 @@ const getTableById = async (req, res) => {
     const table = await prisma.table.findUnique({
       where: {
         id: tableId,
-        table: {
-          connect: { id: userId },
-        },
+        userId: userId,
       },
     });
     res
@@ -56,4 +52,38 @@ const getTableById = async (req, res) => {
   }
 };
 
-module.exports = { getTablesByUser, getTableById };
+const postTable = async (req, res) => {
+  try {
+    const { number } = req.body;
+
+    const userId = parseInt(req.session.passport.user, 10);
+
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user Id" });
+    }
+
+    if (!number) {
+      return res.status(400).json({ message: "Number is mandatory" });
+    }
+
+    const newTable = await prisma.table.create({
+      data: {
+        data: {
+          number: number,
+          user: {
+            connect: { id: userId },
+          },
+        },
+      },
+    });
+
+    res
+      .status(200)
+      .json({ message: "Table created sucessfully", table: newTable });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error creating new table" });
+  }
+};
+
+module.exports = { getTablesByUser, getTableById, postTable };
