@@ -56,33 +56,33 @@ const postTable = async (req, res) => {
   try {
     const { number } = req.body;
 
+    if (typeof number !== "number" || isNaN(number)) {
+      return res
+        .status(400)
+        .json({ message: "Number must be a valid integer." });
+    }
+
     const userId = parseInt(req.session.passport.user, 10);
 
     if (!userId) {
       return res.status(400).json({ message: "Invalid user Id" });
     }
 
-    if (!number) {
-      return res.status(400).json({ message: "Number is mandatory" });
-    }
-
     const newTable = await prisma.table.create({
       data: {
-        data: {
-          number: number,
-          user: {
-            connect: { id: userId },
-          },
+        number: number,
+        user: {
+          connect: { id: userId },
         },
       },
     });
 
-    res
-      .status(200)
-      .json({ message: "Table created sucessfully", table: newTable });
+    return res
+      .status(201)
+      .json({ message: "Table created successfully", table: newTable });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error creating new table" });
+    return res.status(500).json({ message: "Error creating new table" });
   }
 };
 
@@ -157,7 +157,7 @@ const deleteAllUserTable = async (req, res) => {
 };
 
 const cleanUpTable = async (req, res) => {
-  const userId = parseInt(req.session.passport.user);
+  const userId = parseInt(req.session.passport.user, 10);
 
   if (!userId) {
     return res.status(400).json({ message: "User Id Invalid" });
@@ -165,20 +165,26 @@ const cleanUpTable = async (req, res) => {
 
   const tableId = parseInt(req.params.id, 10);
 
-  if (!tableId) {
+  if (isNaN(tableId) || tableId <= 0) {
     return res.status(400).json({ message: "Invalid table Id" });
   }
 
   try {
-    await prisma.table.deleteMany({
+    const deletedOrders = await prisma.order.deleteMany({
       where: {
         tableId: tableId,
         userId: userId,
       },
     });
+
+    return res.status(200).json({
+      message: `${deletedOrders.count} orders deleted successfully from table ${tableId}.`,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: `Error clening up table ${tableId}` });
+    console.error("Error deleting orders:", error);
+    return res
+      .status(500)
+      .json({ message: `Error cleaning up orders for table ${tableId}` });
   }
 };
 
