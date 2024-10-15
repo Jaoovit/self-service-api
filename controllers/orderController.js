@@ -57,4 +57,24 @@ const getOrdersById = async (req, res) => {
   }
 };
 
-module.exports = { getOrdersByTable };
+const deleteOrderById = async (req, res) => {
+  const orderId = parseInt(req.params.orderId);
+
+  if (isNaN(orderId)) {
+    res.status(400).send("Invalid order id");
+  }
+
+  try {
+    await prisma.order.delete({
+      where: {
+        orderId: orderId,
+      },
+    });
+    res.status(200).json({ message: `Order ${orderId} deleted sucessfully` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: `Error deleting order ${orderId}` });
+  }
+};
+
+module.exports = { getOrdersByTable, getOrdersById, deleteOrderById };
