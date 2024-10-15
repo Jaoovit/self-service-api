@@ -24,7 +24,6 @@ model User {
   restaurantName  String
   products        Product[] @relation("UserProducts") // Renamed for clarity
   tables          Table[]
-  orders          Order[]   @relation("UserOrders") // Added relationship for orders
 }
 
 model Product {
@@ -36,15 +35,14 @@ model Product {
   available    Boolean    @default(true)
   userId       Int
   user         User       @relation("UserProducts", fields: [userId], references: [id])
-  orders       Order[]    @relation("OrderProducts") // Many-to-many relation with Order
+  orders       Order[]    @relation("OrderProducts")
 }
 
 model Order {
   id           Int       @id @default(autoincrement())
   createdAt    DateTime  @default(now())
   userId       Int
-  user         User      @relation("UserOrders", fields: [userId], references: [id]) // Added user reference
-  products     Product[]  @relation("OrderProducts") // Many-to-many relation with Product
+  products     Product[]  @relation("OrderProducts")
   tableId      Int
   table        Table      @relation(fields: [tableId], references: [id])
 }

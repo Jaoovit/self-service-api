@@ -46,7 +46,7 @@ const getOrdersByTable = async (req, res) => {
     return res.status(400).json({ message: "User Id Invalid" });
   }
 
-  const tableId = parseInt(req.params.id, 10);
+  const tableId = parseInt(req.params.tableId, 10);
 
   if (isNaN(tableId)) {
     res.status(400).send("Invalid product id");
@@ -82,7 +82,7 @@ const getOrdersById = async (req, res) => {
   try {
     const order = await prisma.order.findUnique({
       where: {
-        orderId: orderId,
+        id: orderId,
       },
     });
     res
@@ -186,6 +186,47 @@ const addItemToOrder = async (req, res) => {
   }
 };
 
+const postOrder = async (req, res) => {
+  const tableId = parseInt(req.query.tableId, 10);
+
+  if (isNaN(tableId)) {
+    return res.status(400).send("Invalid table id");
+  }
+
+  try {
+    const table = await prisma.table.findUnique({
+      where: { id: tableId },
+      select: { userId: true },
+    });
+
+    if (!table) {
+      return res.status(404).send("Table not found");
+    }
+
+    const newOrder = await prisma.order.create({
+      data: {
+        userId: table.userId,
+        table: {
+          connect: {
+            id: tableId,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      message: `New order created for table ${tableId} successfully`,
+      newOrder: newOrder,
+    });
+  } catch (error) {
+    console.error("Error details:", error);
+    res.status(500).json({
+      message: `Error creating order for table ${tableId}`,
+      error: error.message,
+    });
+  }
+};
+
 const removeItemFromOrder = async (req, res) => {
   const orderId = parseInt(req.query.orderId, 10);
 
@@ -283,6 +324,7 @@ module.exports = {
   getOrdersByUser,
   getOrdersByTable,
   getOrdersById,
+  postOrder,
   deleteOrderByTable,
   deleteOrderById,
   addItemToOrder,

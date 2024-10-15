@@ -6,11 +6,14 @@ const verifyToken = require("../config/token");
 // Get
 router.get("/orders", orderController.getOrdersByUser);
 router.get("/order/:orderId", orderController.getOrdersById);
-router.get("/orders/:tableId", orderController.getOrdersByTable);
+router.get("/orders/table/:tableId", orderController.getOrdersByTable);
 
 // Delete
 router.delete("/order/:orderId", orderController.deleteOrderById);
 router.delete("/orders/:tableId", orderController.deleteOrderByTable);
+
+// Post
+router.post("/order", orderController.postOrder); // Postman route test "/order/?tableId=id"
 
 // Put
 router.put("/order/add/?orderId/:productId", orderController.addItemToOrder);
