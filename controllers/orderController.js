@@ -2,7 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-const getOrdersByRestaurant = async (req, res) => {
+const getOrdersByUser = async (req, res) => {
   try {
     const userId = parseInt(req.session?.passport?.user, 10);
 
@@ -227,12 +227,65 @@ const removeItemFromOrder = async (req, res) => {
   }
 };
 
+const sendOrderFromTable = async (req, res) => {
+  try {
+    const { products } = req.body;
+    const tableId = parseInt(req.query.tableId, 10);
+
+    if (isNaN(tableId)) {
+      return res.status(400).json({ message: "Invalid table ID from QR code" });
+    }
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Products must be a non-empty array" });
+    }
+
+    const table = await prisma.table.findUnique({
+      where: {
+        id: tableId,
+      },
+    });
+
+    if (!table) {
+      return res.status(404).json({ message: "Table not found" });
+    }
+
+    const newOrder = await prisma.order.create({
+      data: {
+        user: { connect: { id: table.userId } },
+        table: { connect: { id: tableId } },
+        products: {
+          connect: products.map((productId) => ({ id: productId })),
+        },
+      },
+      include: {
+        products: true,
+        table: true,
+      },
+    });
+
+    return res.status(201).json({
+      message: `Order placed successfully for table ${tableId}`,
+      order: newOrder,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Error placing order for table",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
-  getOrdersByRestaurant,
+  getOrdersByUser,
   getOrdersByTable,
   getOrdersById,
   deleteOrderByTable,
   deleteOrderById,
   addItemToOrder,
   removeItemFromOrder,
+  sendOrderFromTable,
 };
