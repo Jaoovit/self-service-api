@@ -2,6 +2,43 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
+const getOrdersByRestaurant = async (req, res) => {
+  try {
+    const userId = parseInt(req.session?.passport?.user, 10);
+
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
+    const orders = await prisma.order.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        products: true,
+        table: true,
+      },
+    });
+
+    if (orders.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No orders found for this restaurant." });
+    }
+
+    return res.status(200).json({
+      message: `Orders retrieved successfully for restaurant with user ID ${userId}`,
+      orders: orders,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Error retrieving orders for the restaurant.",
+      error: error.message,
+    });
+  }
+};
+
 const getOrdersByTable = async (req, res) => {
   const userId = parseInt(req.session.passport.user, 10);
 
@@ -191,6 +228,7 @@ const removeItemFromOrder = async (req, res) => {
 };
 
 module.exports = {
+  getOrdersByRestaurant,
   getOrdersByTable,
   getOrdersById,
   deleteOrderByTable,
