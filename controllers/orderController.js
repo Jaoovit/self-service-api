@@ -149,10 +149,52 @@ const addItemToOrder = async (req, res) => {
   }
 };
 
+const removeItemFromOrder = async (req, res) => {
+  const orderId = parseInt(req.query.orderId, 10);
+
+  if (isNaN(orderId)) {
+    return res.status(400).send("Invalid order id");
+  }
+
+  const productId = parseInt(req.params.productId, 10);
+
+  if (isNaN(productId)) {
+    return res.status(400).send("Invalid product id");
+  }
+
+  try {
+    const updatedOrder = await prisma.order.update({
+      where: {
+        id: orderId,
+      },
+      data: {
+        products: {
+          disconnect: { id: productId },
+        },
+      },
+      include: {
+        products: true,
+      },
+    });
+
+    return res.status(200).json({
+      message: `Product ${productId} removed from the order ${orderId} successfully`,
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: `Error removing product ${productId} from the order ${orderId}`,
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getOrdersByTable,
   getOrdersById,
   deleteOrderByTable,
   deleteOrderById,
   addItemToOrder,
+  removeItemFromOrder,
 };
