@@ -94,6 +94,47 @@ const getOrdersById = async (req, res) => {
   }
 };
 
+const postOrder = async (req, res) => {
+  const tableId = parseInt(req.query.tableId, 10);
+
+  if (isNaN(tableId)) {
+    return res.status(400).send("Invalid table id");
+  }
+
+  try {
+    const table = await prisma.table.findUnique({
+      where: { id: tableId },
+      select: { userId: true },
+    });
+
+    if (!table) {
+      return res.status(404).send("Table not found");
+    }
+
+    const newOrder = await prisma.order.create({
+      data: {
+        userId: table.userId,
+        table: {
+          connect: {
+            id: tableId,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      message: `New order created for table ${tableId} successfully`,
+      newOrder: newOrder,
+    });
+  } catch (error) {
+    console.error("Error details:", error);
+    res.status(500).json({
+      message: `Error creating order for table ${tableId}`,
+      error: error.message,
+    });
+  }
+};
+
 const deleteOrderByTable = async (req, res) => {
   const userId = parseInt(req.session.passport.user, 10);
 
@@ -101,14 +142,14 @@ const deleteOrderByTable = async (req, res) => {
     return res.status(400).json({ message: "User Id Invalid" });
   }
 
-  const tableId = parseInt(req.params.id, 10);
+  const tableId = parseInt(req.params.tableId, 10);
 
   if (isNaN(tableId)) {
     res.status(400).send("Invalid product id");
   }
 
   try {
-    await prisma.order.delete({
+    await prisma.order.deleteMany({
       where: {
         userId: userId,
         tableId: tableId,
@@ -136,7 +177,7 @@ const deleteOrderById = async (req, res) => {
   try {
     await prisma.order.delete({
       where: {
-        orderId: orderId,
+        id: orderId,
       },
     });
     res.status(200).json({ message: `Order ${orderId} deleted sucessfully` });
@@ -182,47 +223,6 @@ const addItemToOrder = async (req, res) => {
     console.error(error);
     res.status(500).json({
       message: `Erro adding product ${productId} to the order ${orderId}`,
-    });
-  }
-};
-
-const postOrder = async (req, res) => {
-  const tableId = parseInt(req.query.tableId, 10);
-
-  if (isNaN(tableId)) {
-    return res.status(400).send("Invalid table id");
-  }
-
-  try {
-    const table = await prisma.table.findUnique({
-      where: { id: tableId },
-      select: { userId: true },
-    });
-
-    if (!table) {
-      return res.status(404).send("Table not found");
-    }
-
-    const newOrder = await prisma.order.create({
-      data: {
-        userId: table.userId,
-        table: {
-          connect: {
-            id: tableId,
-          },
-        },
-      },
-    });
-
-    res.status(200).json({
-      message: `New order created for table ${tableId} successfully`,
-      newOrder: newOrder,
-    });
-  } catch (error) {
-    console.error("Error details:", error);
-    res.status(500).json({
-      message: `Error creating order for table ${tableId}`,
-      error: error.message,
     });
   }
 };

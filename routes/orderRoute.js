@@ -10,10 +10,10 @@ router.get("/orders/table/:tableId", orderController.getOrdersByTable);
 
 // Delete
 router.delete("/order/:orderId", orderController.deleteOrderById);
-router.delete("/orders/:tableId", orderController.deleteOrderByTable);
+router.delete("/orders/table/:tableId", orderController.deleteOrderByTable);
 
 // Post
-router.post("/order", orderController.postOrder); // Postman route test "/order/?tableId=id"
+router.post("/order/table", orderController.postOrder); // Postman route test "/order/?tableId=id"
 
 // Put
 router.put("/order/add/?orderId/:productId", orderController.addItemToOrder);
