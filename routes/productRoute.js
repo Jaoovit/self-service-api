@@ -13,12 +13,14 @@ router.get("/product/:id", productController.getProductById);
 router.post("/product", verifyToken, productController.postProduct);
 
 // Put
-router.put(
+router.put("/product/:id", verifyToken, productController.updateProduct);
+
+// Patch
+router.patch(
   "/product/switchStatus/:id",
   verifyToken,
   productController.switchProductStatus
 );
-router.put("/product/:id", verifyToken, productController.updateProduct);
 
 // Delete
 router.delete(
