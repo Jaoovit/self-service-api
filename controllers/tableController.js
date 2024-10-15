@@ -33,7 +33,7 @@ const getTableById = async (req, res) => {
   const tableId = parseInt(req.params.id, 10);
 
   if (isNaN(tableId)) {
-    res.status(400).send("Invalid product id");
+    res.status(400).send("Invalid table id");
   }
 
   try {

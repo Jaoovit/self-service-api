@@ -35,4 +35,26 @@ const getOrdersByTable = async (req, res) => {
   }
 };
 
+const getOrdersById = async (req, res) => {
+  const orderId = parseInt(req.params.orderId);
+
+  if (isNaN(orderId)) {
+    res.status(400).send("Invalid order id");
+  }
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: {
+        orderId: orderId,
+      },
+    });
+    res
+      .status(200)
+      .json({ message: `Order ${orderId} gotten sucessfully`, order: order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: `Error getting order ${orderId}` });
+  }
+};
+
 module.exports = { getOrdersByTable };
