@@ -8,7 +8,7 @@ router.get("/tables", verifyToken, tableController.getTablesByUser);
 router.get("/table/:id", verifyToken, tableController.getTableById);
 
 // Post
-router.post("/table", verifyToken, tableController.postTable);
+router.post("/table", tableController.postTable);
 
 // Delete
 router.delete("/tables", verifyToken, tableController.deleteAllUserTable);

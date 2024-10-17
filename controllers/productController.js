@@ -47,6 +47,10 @@ const getProductById = async (req, res) => {
     ? parseInt(req.session.passport.user, 10)
     : null;
 
+  const restaurantId = req.params.restaurantId
+    ? parseInt(req.params.restaurantId, 10)
+    : null;
+
   const productId = parseInt(req.params.id, 10);
 
   if (isNaN(productId)) {
@@ -61,6 +65,12 @@ const getProductById = async (req, res) => {
         where: {
           id: productId,
           userId: userId,
+        },
+      });
+    } else if (restaurantId) {
+      product = await prisma.product.findMany({
+        where: {
+          userId: restaurantId,
         },
       });
 
@@ -124,59 +134,6 @@ const postProduct = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating new product" });
-  }
-};
-
-const deleteProductById = async (req, res) => {
-  const userId = parseInt(req.session.passport.user, 10);
-
-  if (!userId) {
-    return res.status(400).json({ message: "User Id Invalid" });
-  }
-  const productId = parseInt(req.params.id, 10);
-
-  if (!productId) {
-    return res.status(400).json({ message: "Invalid product Id" });
-  }
-
-  try {
-    await prisma.product.delete({
-      where: {
-        id: productId,
-        userId: userId,
-      },
-    });
-
-    res
-      .status(200)
-      .json({ message: `Product ${productId} deleted sucessfully` });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: `Error deleting product ${productId}` });
-  }
-};
-
-const deleteAllUserProducts = async (req, res) => {
-  const userId = parseInt(req.session.passport.user, 10);
-
-  if (!userId) {
-    return res.status(400).json({ message: "User Id Invalid" });
-  }
-
-  try {
-    await prisma.product.deleteMany({
-      where: {
-        userId: userId,
-      },
-    });
-    res
-      .status(200)
-      .json({ message: `All user ${userId} products was deleted` });
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: `Error deleting products for user ${userId}` });
   }
 };
 
@@ -257,8 +214,6 @@ const switchProductStatus = async (req, res) => {
         available: newAvailability,
       },
     });
-
-    // Send HTTP response
     res.status(200).json({
       message: `Product availability switched to ${newAvailability}`,
       product: updatedProduct,
@@ -266,6 +221,59 @@ const switchProductStatus = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({});
+  }
+};
+
+const deleteProductById = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
+  const productId = parseInt(req.params.id, 10);
+
+  if (!productId) {
+    return res.status(400).json({ message: "Invalid product Id" });
+  }
+
+  try {
+    await prisma.product.delete({
+      where: {
+        id: productId,
+        userId: userId,
+      },
+    });
+
+    res
+      .status(200)
+      .json({ message: `Product ${productId} deleted sucessfully` });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: `Error deleting product ${productId}` });
+  }
+};
+
+const deleteAllUserProducts = async (req, res) => {
+  const userId = parseInt(req.session.passport.user, 10);
+
+  if (!userId) {
+    return res.status(400).json({ message: "User Id Invalid" });
+  }
+
+  try {
+    await prisma.product.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+    res
+      .status(200)
+      .json({ message: `All user ${userId} products was deleted` });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: `Error deleting products for user ${userId}` });
   }
 };
 

@@ -5,10 +5,13 @@ const verifyToken = require("../config/token");
 
 // Get
 
-// getting products as a client => /products?restaurantId=:id
+// getting products as a restaurante
 router.get("/products", productController.getProductsByUser);
-router.get("/products/:restaurantId", productController.getProductsByUser); // getting products as a restaurante
+router.get("/products/:restaurantId", productController.getProductsByUser);
+
+// getting products as a client
 router.get("/product/:id", productController.getProductById);
+router.get("/product/:id/:restaurantId", productController.getProductById);
 
 // Post
 router.post("/product", verifyToken, productController.postProduct);

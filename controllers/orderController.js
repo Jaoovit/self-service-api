@@ -49,7 +49,7 @@ const getOrdersByTable = async (req, res) => {
   const tableId = parseInt(req.params.tableId, 10);
 
   if (isNaN(tableId)) {
-    res.status(400).send("Invalid product id");
+    res.status(400).send("Invalid table id");
   }
 
   try {
@@ -145,25 +145,41 @@ const deleteOrderByTable = async (req, res) => {
   const tableId = parseInt(req.params.tableId, 10);
 
   if (isNaN(tableId)) {
-    res.status(400).send("Invalid product id");
+    return res.status(400).send("Invalid table id");
   }
 
   try {
-    await prisma.order.deleteMany({
+    const orders = await prisma.order.findMany({
       where: {
         userId: userId,
         tableId: tableId,
       },
     });
 
+    const orderIds = orders.map((order) => order.id);
+
+    if (orderIds.length > 0) {
+      await prisma.orderItem.deleteMany({
+        where: {
+          orderId: { in: orderIds },
+        },
+      });
+      await prisma.order.deleteMany({
+        where: {
+          id: { in: orderIds },
+        },
+      });
+    }
+
     res.status(200).json({
-      message: `Table ${tableId} orders deleted suceessfully`,
+      message: `Orders for table ${tableId} deleted successfully`,
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ message: `Error deleting orders for table ${tableId}` });
+    res.status(500).json({
+      message: `Error deleting orders for table ${tableId}`,
+      error: error.message,
+    });
   }
 };
 
@@ -175,6 +191,12 @@ const deleteOrderById = async (req, res) => {
   }
 
   try {
+    await prisma.orderItem.deleteMany({
+      where: {
+        orderId: orderId,
+      },
+    });
+
     await prisma.order.delete({
       where: {
         id: orderId,
@@ -259,7 +281,6 @@ const deleteItemFromOrder = async (req, res) => {
   }
 
   try {
-    // Check if the product exists in the order
     const existingOrderItem = await prisma.orderItem.findFirst({
       where: {
         orderId: orderId,
@@ -272,7 +293,6 @@ const deleteItemFromOrder = async (req, res) => {
     }
 
     if (existingOrderItem.quantity > 1) {
-      // If the quantity is greater than 1, decrement the quantity
       await prisma.orderItem.update({
         where: {
           id: existingOrderItem.id,
@@ -282,7 +302,6 @@ const deleteItemFromOrder = async (req, res) => {
         },
       });
     } else {
-      // If the quantity is 1, remove the product from the order (delete the OrderItem)
       await prisma.orderItem.delete({
         where: {
           id: existingOrderItem.id,
@@ -290,7 +309,6 @@ const deleteItemFromOrder = async (req, res) => {
       });
     }
 
-    // Fetch the updated order with its products and quantities
     const updatedOrder = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
