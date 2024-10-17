@@ -13,13 +13,13 @@ router.delete("/order/:orderId", orderController.deleteOrderById);
 router.delete("/orders/table/:tableId", orderController.deleteOrderByTable);
 
 // Post
-router.post("/order/table", orderController.postOrder); // Postman route test "/order/?tableId=id"
+router.post("/order/table/:tableId", orderController.postOrder);
 
 // Put
-router.put("/order/add/?orderId/:productId", orderController.addItemToOrder);
+router.put("/order/add/:productId/:orderId", orderController.addItemToOrder);
 router.put(
-  "/order/remove/?orderId/:productId",
-  orderController.removeItemFromOrder
+  "/order/remove/:productId/:orderId",
+  orderController.deleteItemFromOrder
 );
 
 module.exports = router;

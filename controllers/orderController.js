@@ -95,7 +95,7 @@ const getOrdersById = async (req, res) => {
 };
 
 const postOrder = async (req, res) => {
-  const tableId = parseInt(req.query.tableId, 10);
+  const tableId = parseInt(req.params.tableId, 10);
 
   if (isNaN(tableId)) {
     return res.status(400).send("Invalid table id");
@@ -188,135 +188,124 @@ const deleteOrderById = async (req, res) => {
 };
 
 const addItemToOrder = async (req, res) => {
-  const orderId = parseInt(req.query.orderId, 10);
-
-  if (isNaN(orderId)) {
-    res.status(400).send("Invalid order id");
-  }
-
+  const orderId = parseInt(req.params.orderId, 10);
   const productId = parseInt(req.params.productId, 10);
-
-  if (isNaN(productId)) {
-    res.status(400).send("Invalid product id");
-  }
-
-  try {
-    const updatedOrder = await prisma.order.update({
-      where: {
-        id: orderId,
-      },
-      data: {
-        products: {
-          connect: { id: productId },
-        },
-      },
-      include: {
-        products: true,
-      },
-    });
-
-    return res.status(200).json({
-      message: `Product ${productId} added to the order ${orderId} successfully`,
-      order: updatedOrder,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: `Erro adding product ${productId} to the order ${orderId}`,
-    });
-  }
-};
-
-const removeItemFromOrder = async (req, res) => {
-  const orderId = parseInt(req.query.orderId, 10);
 
   if (isNaN(orderId)) {
     return res.status(400).send("Invalid order id");
   }
-
-  const productId = parseInt(req.params.productId, 10);
 
   if (isNaN(productId)) {
     return res.status(400).send("Invalid product id");
   }
 
   try {
-    const updatedOrder = await prisma.order.update({
+    const existingOrderItem = await prisma.orderItem.findFirst({
       where: {
-        id: orderId,
-      },
-      data: {
-        products: {
-          disconnect: { id: productId },
-        },
-      },
-      include: {
-        products: true,
+        orderId: orderId,
+        productId: productId,
       },
     });
 
-    return res.status(200).json({
-      message: `Product ${productId} removed from the order ${orderId} successfully`,
-      order: updatedOrder,
+    let updatedOrderItem;
+
+    if (existingOrderItem) {
+      updatedOrderItem = await prisma.orderItem.update({
+        where: {
+          id: existingOrderItem.id,
+        },
+        data: {
+          quantity: existingOrderItem.quantity + 1,
+        },
+      });
+    } else {
+      updatedOrderItem = await prisma.orderItem.create({
+        data: {
+          orderId: orderId,
+          productId: productId,
+          quantity: 1,
+        },
+      });
+    }
+
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
     });
+
+    res.status(200).json(updatedOrder);
   } catch (error) {
     console.error(error);
-    return res.status(500).json({
-      message: `Error removing product ${productId} from the order ${orderId}`,
-      error: error.message,
-    });
+    res.status(500).send("An error occurred while adding item to order");
   }
 };
 
-const sendOrderFromTable = async (req, res) => {
+const deleteItemFromOrder = async (req, res) => {
+  const orderId = parseInt(req.params.orderId, 10);
+  const productId = parseInt(req.params.productId, 10);
+
+  if (isNaN(orderId)) {
+    return res.status(400).send("Invalid order id");
+  }
+
+  if (isNaN(productId)) {
+    return res.status(400).send("Invalid product id");
+  }
+
   try {
-    const { products } = req.body;
-    const tableId = parseInt(req.query.tableId, 10);
-
-    if (isNaN(tableId)) {
-      return res.status(400).json({ message: "Invalid table ID from QR code" });
-    }
-
-    if (!Array.isArray(products) || products.length === 0) {
-      return res
-        .status(400)
-        .json({ message: "Products must be a non-empty array" });
-    }
-
-    const table = await prisma.table.findUnique({
+    // Check if the product exists in the order
+    const existingOrderItem = await prisma.orderItem.findFirst({
       where: {
-        id: tableId,
+        orderId: orderId,
+        productId: productId,
       },
     });
 
-    if (!table) {
-      return res.status(404).json({ message: "Table not found" });
+    if (!existingOrderItem) {
+      return res.status(404).send("Product not found in the order");
     }
 
-    const newOrder = await prisma.order.create({
-      data: {
-        user: { connect: { id: table.userId } },
-        table: { connect: { id: tableId } },
-        products: {
-          connect: products.map((productId) => ({ id: productId })),
+    if (existingOrderItem.quantity > 1) {
+      // If the quantity is greater than 1, decrement the quantity
+      await prisma.orderItem.update({
+        where: {
+          id: existingOrderItem.id,
+        },
+        data: {
+          quantity: existingOrderItem.quantity - 1,
+        },
+      });
+    } else {
+      // If the quantity is 1, remove the product from the order (delete the OrderItem)
+      await prisma.orderItem.delete({
+        where: {
+          id: existingOrderItem.id,
+        },
+      });
+    }
+
+    // Fetch the updated order with its products and quantities
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
         },
       },
-      include: {
-        products: true,
-        table: true,
-      },
     });
 
-    return res.status(201).json({
-      message: `Order placed successfully for table ${tableId}`,
-      order: newOrder,
-    });
+    res.status(200).json(updatedOrder);
   } catch (error) {
     console.error(error);
-    return res.status(500).json({
-      message: "Error placing order for table",
-      error: error.message,
-    });
+    res.status(500).send("An error occurred while deleting item from order");
   }
 };
 
@@ -328,6 +317,5 @@ module.exports = {
   deleteOrderByTable,
   deleteOrderById,
   addItemToOrder,
-  removeItemFromOrder,
-  sendOrderFromTable,
+  deleteItemFromOrder,
 };

@@ -1,5 +1,4 @@
 const { PrismaClient } = require("@prisma/client");
-const { broadcastToClients } = require("../config/websocket");
 
 const prisma = new PrismaClient();
 
@@ -8,8 +7,8 @@ const getProductsByUser = async (req, res) => {
     ? parseInt(req.session.passport.user, 10)
     : null;
 
-  const restaurantId = req.query.restaurantId
-    ? parseInt(req.query.restaurantId, 10)
+  const restaurantId = req.params.restaurantId
+    ? parseInt(req.params.restaurantId, 10)
     : null;
 
   try {
@@ -263,15 +262,6 @@ const switchProductStatus = async (req, res) => {
     res.status(200).json({
       message: `Product availability switched to ${newAvailability}`,
       product: updatedProduct,
-    });
-
-    // Broadcast product update via WebSocket
-    broadcastToClients({
-      type: "PRODUCT_STATUS_UPDATE",
-      product: {
-        id: productId,
-        available: newAvailability,
-      },
     });
   } catch (error) {
     console.error(error);

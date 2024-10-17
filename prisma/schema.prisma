@@ -26,26 +26,36 @@ model User {
   tables          Table[]
 }
 
+model Order {
+  id           Int         @id @default(autoincrement())
+  createdAt    DateTime    @default(now())
+  userId       Int
+  tableId      Int
+  table        Table       @relation(fields: [tableId], references: [id])
+  orderItems   OrderItem[] // New relation with OrderItem to track products and quantities
+}
+
 model Product {
-  id           Int       @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   imageUrl     String
   title        String
   description  String
   price        Float
-  available    Boolean    @default(true)
+  available    Boolean     @default(true)
   userId       Int
-  user         User       @relation("UserProducts", fields: [userId], references: [id])
-  orders       Order[]    @relation("OrderProducts")
+  user         User        @relation("UserProducts", fields: [userId], references: [id])
+  orderItems   OrderItem[] // New relation with OrderItem to track orders
 }
 
-model Order {
-  id           Int       @id @default(autoincrement())
-  createdAt    DateTime  @default(now())
-  userId       Int
-  products     Product[]  @relation("OrderProducts")
-  tableId      Int
-  table        Table      @relation(fields: [tableId], references: [id])
+model OrderItem {
+  id           Int         @id @default(autoincrement())
+  orderId      Int
+  productId    Int
+  quantity     Int         @default(1)
+  order        Order       @relation(fields: [orderId], references: [id])
+  product      Product     @relation(fields: [productId], references: [id])
 }
+
 
 model Table {
   id       Int     @id @default(autoincrement())
