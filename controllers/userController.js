@@ -55,9 +55,10 @@ const loginUser = (req, res, next) => {
       return next(err);
     }
     if (!user) {
-      return res
-        .status(401)
-        .json({ error: "Authentication failed", message: info.message });
+      return res.status(401).json({
+        error: "Authentication failed",
+        message: "Incorrect username or password",
+      });
     }
     req.logIn(user, async (err) => {
       if (err) {
