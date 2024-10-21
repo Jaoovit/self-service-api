@@ -1,15 +1,22 @@
-// Funtion to verify token
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const verifyToken = (req, res, next) => {
-  const bearerHeader = req.headers["authorization"];
-  if (typeof bearerHeader !== "undefined") {
-    const bearer = bearerHeader.split(" ");
-    const bearerToken = bearer[1];
-    req.token = bearerToken;
-    next();
-  } else {
-    res.sendStatus(403);
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.sendStatus(403);
   }
+
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.sendStatus(403);
+    }
+
+    req.user = decoded;
+
+    next();
+  });
 };
 
 module.exports = verifyToken;

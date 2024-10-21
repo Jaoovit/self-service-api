@@ -49,8 +49,6 @@ const registerUser = async (req, res) => {
   }
 };
 
-// Test postman header - Content-Type: application/json
-
 const loginUser = (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
     if (err) {
@@ -72,9 +70,15 @@ const loginUser = (req, res, next) => {
         expiresIn: "1h",
       });
 
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+        maxAge: 3600000,
+      });
+
       return res.status(200).json({
         message: "Login successful",
-        token: token,
         user: {
           id: user.id,
           username: user.username,
