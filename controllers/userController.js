@@ -33,10 +33,11 @@ const registerUser = async (req, res) => {
       message: "User registered successfully",
     });
   } catch (error) {
-    console.log(req.body);
-    res
-      .status(500)
-      .json({ error: "Error registering user", details: error.message });
+    if (error.code === "P2002") {
+      res.status(409).json({ message: "Username or email already exists" });
+    } else {
+      res.status(500).json({ message: "Something went wrong" });
+    }
   }
 };
 
