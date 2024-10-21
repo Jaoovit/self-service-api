@@ -34,7 +34,15 @@ const registerUser = async (req, res) => {
     });
   } catch (error) {
     if (error.code === "P2002") {
-      res.status(409).json({ message: "Username or email already exists" });
+      const targetField = error.meta.target;
+
+      if (targetField.includes("username")) {
+        res.status(409).json({ message: "Username already exists" });
+      } else if (targetField.includes("email")) {
+        res.status(409).json({ message: "Email already exists" });
+      } else {
+        res.status(409).json({ message: "A unique field already exists" });
+      }
     } else {
       res.status(500).json({ message: "Something went wrong" });
     }
