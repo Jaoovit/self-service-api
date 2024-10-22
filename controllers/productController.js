@@ -111,26 +111,29 @@ const postProduct = async (req, res) => {
       return res.status(400).json({ message: "All form fields are mandatory" });
     }
 
-    const userId = parseInt(req.session.passport.user, 10);
+    const userId = req.user.id;
 
     if (!userId) {
-      return res.status(400).json({ message: "Invalid user Id" });
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to perform this action" });
     }
 
     const newProduct = await prisma.product.create({
       data: {
-        title: title,
-        price: price,
-        description: description,
-        imageUrl: imageUrl,
+        title,
+        price,
+        description,
+        imageUrl,
         user: {
           connect: { id: userId },
         },
       },
     });
+
     res
       .status(200)
-      .json({ message: "Product created sucessfully", product: newProduct });
+      .json({ message: "Product created successfully", product: newProduct });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error creating new product" });
